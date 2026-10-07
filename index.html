@@ -1,0 +1,1149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Candy Clicker v14 — Made by Ryan</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg1:#ff9a9e; --bg2:#fad0c4; --bg3:#fbc2eb;
+    --panel:#ffffff; --panel-bg:rgba(255,255,255,.85);
+    --accent:#ff6b9d; --accent-dark:#c9184a;
+    --text:#4a2c2a; --sub:#7a4a4a;
+    --candy1:#ff7fb0; --candy2:#ff9ec6; --candy-border:#8a5fc0;
+    --left1:#e8f4ff; --left2:#b3d9ff; --left3:#7bb8ff;
+  }
+  body[data-theme="mint"] {
+    --bg1:#a8edea; --bg2:#d4fc79; --bg3:#96e6a1; --panel-bg:rgba(255,255,255,.88);
+    --accent:#3ec1a0; --accent-dark:#0b7a5e; --text:#1e3a32; --sub:#3a6b5c;
+    --candy1:#7be0c0; --candy2:#a8f0dc; --candy-border:#0b7a5e;
+    --left1:#eafff8; --left2:#c4f5e6; --left3:#96e6a1;
+  }
+  body[data-theme="galaxy"] {
+    --bg1:#2b1055; --bg2:#7597de; --bg3:#2b1055; --panel-bg:rgba(30,20,60,.9);
+    --accent:#a87fff; --accent-dark:#5a3fc0; --text:#e8e0ff; --sub:#b0a0e0;
+    --candy1:#c07fff; --candy2:#d9a8ff; --candy-border:#3a2080;
+    --left1:#1a1030; --left2:#2b1055; --left3:#1a1030;
+  }
+  body[data-theme="sunset"] {
+    --bg1:#ff7e5f; --bg2:#feb47b; --bg3:#ffd194; --panel-bg:rgba(255,245,235,.9);
+    --accent:#ff6b3d; --accent-dark:#a03010; --text:#4a2010; --sub:#7a4020;
+    --candy1:#ff9a55; --candy2:#ffbd85; --candy-border:#a03010;
+    --left1:#fff0e0; --left2:#ffd8b0; --left3:#ffb070;
+  }
+  body[data-theme="midnight"] {
+    --bg1:#0f0c29; --bg2:#302b63; --bg3:#24243e; --panel-bg:rgba(20,20,40,.9);
+    --accent:#ff4d8d; --accent-dark:#a02050; --text:#e0e0ff; --sub:#a0a0d0;
+    --candy1:#ff4d8d; --candy2:#ff80ab; --candy-border:#5a1030;
+    --left1:#0a0820; --left2:#1a1838; --left3:#0a0820;
+  }
+  body {
+    font-family: 'Segoe UI', Tahoma, sans-serif;
+    background: linear-gradient(135deg, var(--bg1) 0%, var(--bg2) 50%, var(--bg3) 100%);
+    min-height: 100vh; display: flex; color: var(--text);
+    transition: background .4s, color .4s;
+  }
+  #left {
+    flex:1; display:flex; flex-direction:column; align-items:center;
+    justify-content:center; padding:20px; position:relative;
+    background: radial-gradient(circle at 50% 50%, var(--left1), var(--left2) 40%, var(--left3));
+    transition: background .4s;
+  }
+  #left::before {
+    content:''; position:absolute; inset:0;
+    background: repeating-conic-gradient(from 0deg at 50% 50%,
+        rgba(255,255,255,.45) 0deg 12deg, rgba(255,255,255,0) 12deg 24deg);
+    pointer-events:none; z-index:0;
+  }
+  body[data-theme="galaxy"] #left::before,
+  body[data-theme="midnight"] #left::before { opacity:.25; }
+
+  #credit {
+    position:absolute; top:12px; left:16px; z-index:5; font-size:.85em;
+    color:var(--sub); font-style:italic;
+    background:var(--panel-bg); padding:4px 10px; border-radius:20px;
+    border:1px solid var(--accent);
+  }
+  #player-name-display {
+    position:absolute; top:12px; left:50%; transform:translateX(-50%);
+    z-index:5; font-size:.9em; font-weight:bold; color:var(--accent-dark);
+    background:var(--panel-bg); padding:5px 14px; border-radius:20px;
+    border:2px solid var(--accent);
+  }
+  #startup-banner {
+    position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%);
+    z-index: 6; font-size: .8em; font-weight: bold;
+    background: #2a6a2a; color: #fff;
+    padding: 6px 14px; border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(0,0,0,.3);
+  }
+  #startup-banner.error { background: #9a2a2a; }
+
+  #candy-count { font-size:2.2em; font-weight:bold; text-shadow:2px 2px 0 rgba(255,255,255,.4); margin-bottom:5px; position:relative; z-index:2; }
+  #cps { font-size:1em; color:var(--sub); margin-bottom:6px; position:relative; z-index:2; }
+  #debug-hint { font-size:.78em; color:#9a3050; margin-bottom:10px; position:relative; z-index:2; font-style:italic; text-align:center; min-height:1em; max-width: 90%; }
+  #click-value { font-size:.9em; color:var(--accent-dark); font-weight:bold; margin-bottom:6px; position:relative; z-index:2; }
+  #active-bonus { font-size:.85em; color:var(--accent-dark); margin-bottom:15px; font-style:italic; text-align:center; min-height:1.2em; position:relative; z-index:2; }
+
+  #candy-wrap {
+    position: relative; width: 260px; height: 260px;
+    display: flex; align-items: center; justify-content: center;
+    user-select: none; z-index: 2;
+  }
+  #candy {
+    width: 230px; height: 230px; border-radius: 50%; cursor: pointer; position: relative; z-index: 2;
+    background: repeating-linear-gradient(135deg,
+        var(--candy1) 0px, var(--candy1) 26px,
+        var(--candy2) 26px, var(--candy2) 52px);
+    border: 8px solid var(--candy-border);
+    box-shadow: 0 8px 24px rgba(0,0,0,.3),
+      inset -22px -22px 40px rgba(0,0,0,.2),
+      inset 14px 14px 30px rgba(255,255,255,.35);
+    transition: transform .08s, border-color .4s, background .4s; overflow: hidden;
+  }
+  #candy::before {
+    content: ''; position: absolute; top: 8%; left: 12%;
+    width: 110px; height: 70px; border-radius: 50%;
+    background: radial-gradient(circle at 40% 40%, rgba(255,255,255,.9), rgba(255,255,255,0) 70%);
+    filter: blur(2px); pointer-events: none;
+  }
+  #candy::after {
+    content: ''; position: absolute; bottom: 12%; right: 16%;
+    width: 34px; height: 26px; border-radius: 50%;
+    background: rgba(255,255,255,.5); filter: blur(3px); pointer-events: none;
+  }
+  #candy:active { transform: scale(.93); }
+  #candy.bounce { animation: bounce .28s; }
+  @keyframes bounce { 0%{transform:scale(1);} 40%{transform:scale(.9);} 100%{transform:scale(1);} }
+
+  .float {
+    position:absolute; pointer-events:none; font-weight:bold; color:#fff;
+    text-shadow:1px 1px 3px rgba(0,0,0,.5);
+    animation:floatUp 1s ease-out forwards; font-size:1.2em; z-index: 9999;
+  }
+  @keyframes floatUp { 0%{opacity:1; transform:translateY(0);} 100%{opacity:0; transform:translateY(-80px);} }
+
+  #right {
+    width:440px; background:var(--panel-bg); backdrop-filter:blur(8px);
+    padding:20px; overflow-y:auto; max-height:100vh;
+    border-left:3px solid var(--accent); transition: background .4s, border-color .4s;
+  }
+  #right h2 { font-size:1.15em; margin:15px 0 10px; color:var(--accent-dark); border-bottom:2px solid var(--accent); padding-bottom:5px; }
+  #right h2:first-child { margin-top:0; }
+
+  .item {
+    display:flex; align-items:flex-start;
+    background:var(--panel); border-radius:12px;
+    padding:12px; margin-bottom:10px;
+    cursor:pointer; width:100%;
+    font-family:inherit; font-size:1em; text-align:left;
+    transition: box-shadow .12s, border-color .12s, background .4s;
+    box-shadow:0 2px 8px rgba(0,0,0,.1);
+    border:2px solid transparent;
+    position: relative; z-index: 1;
+  }
+  body[data-theme="galaxy"] .item,
+  body[data-theme="midnight"] .item { background: rgba(255,255,255,.08); color: var(--text); }
+  .item:hover { box-shadow:0 6px 18px rgba(0,0,0,.25); }
+  .item:active { background: rgba(255,107,157,.1); }
+  .item.affordable { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(255,107,157,.2), 0 2px 8px rgba(0,0,0,.1); }
+  .item .icon { font-size:2em; margin-right:12px; width:48px; text-align:center; flex-shrink:0; }
+  .item .info { flex:1; min-width:0; }
+  .item .name { font-weight:bold; font-size:1em; }
+  .item .cost { font-size:.85em; color:var(--accent-dark); margin-top:2px; }
+  .item .owned { font-size:.8em; color:var(--sub); }
+  .item .cps-each { font-size:.75em; color:#2aa080; margin-top:2px; }
+  .item .bonus {
+    font-size:.75em; color:var(--accent-dark); margin-top:5px;
+    background: rgba(255,107,157,.12);
+    border-left:3px solid var(--accent);
+    padding:4px 7px; border-radius:4px;
+  }
+
+  #upgrades { display:flex; flex-wrap:wrap; gap:8px; }
+  .upgrade {
+    background: rgba(255,107,157,.18);
+    border:2px solid var(--accent); border-radius:10px;
+    padding:9px 11px; font-size:.78em; cursor:pointer; text-align:left;
+    width:calc(50% - 4px); transition: box-shadow .1s, background .4s;
+    line-height:1.35; color: var(--text); font-family:inherit;
+  }
+  .upgrade:hover { box-shadow:0 4px 12px rgba(0,0,0,.25); }
+  .upgrade:active { background: rgba(255,107,157,.32); }
+  .upgrade.locked { opacity:.5; cursor:not-allowed; background: rgba(150,150,150,.2); border-color: rgba(150,150,150,.5); }
+  .upgrade.locked:hover { box-shadow:none; }
+  .upgrade strong { display:block; margin-bottom:3px; color:var(--accent-dark); }
+  .upgrade .effect { color:var(--accent-dark); font-weight:600; }
+
+  #stats {
+    font-size:.85em; color:var(--sub);
+    background: rgba(255,107,157,.12);
+    border-radius:10px; padding:10px; line-height:1.6;
+  }
+
+  /* ---------- FLOATING BUTTONS ---------- */
+  #settings-toggle, #hack-toggle {
+    position: fixed; top:12px; z-index: 1001;
+    border-radius: 50%; width: 46px; height: 46px; font-size: 1.4em;
+    cursor: pointer; border: none;
+    box-shadow: 0 4px 12px rgba(0,0,0,.3);
+    transition: transform .1s, opacity .25s ease;
+  }
+  #settings-toggle { right: 12px; background: var(--accent); color:#fff; }
+  #settings-toggle:hover { transform: rotate(30deg) scale(1.05); }
+
+  /* Hidden while its panel is open */
+  #settings-toggle.hidden-while-open,
+  #hack-toggle.hidden-while-open {
+    opacity: 0;
+    pointer-events: none;
+    transform: scale(0.4);
+  }
+
+  #hack-toggle {
+    right: 70px; background:#1a1a1a; color:#0f0; border:2px solid #0f0;
+    width:auto; height:auto; border-radius: 8px; padding: 10px 14px;
+    font-size: .9em; font-weight: bold; font-family: monospace;
+    display: none; animation: hackPulse 1.5s infinite alternate;
+  }
+  #hack-toggle.show { display: block; }
+  @keyframes hackPulse { from{box-shadow:0 0 10px rgba(0,255,0,.4);} to{box-shadow:0 0 25px rgba(0,255,0,.9);} }
+
+  #settings-panel, #hack-panel {
+    position: fixed; top: 0; right: -420px; width: 400px; height: 100vh;
+    background: var(--panel-bg); backdrop-filter: blur(12px);
+    box-shadow: -6px 0 30px rgba(0,0,0,.35);
+    z-index: 1000; padding: 22px; overflow-y: auto;
+    transition: right .35s ease, background .4s;
+    border-left: 3px solid var(--accent);
+  }
+  #settings-panel.open, #hack-panel.open { right: 0; }
+  #hack-panel {
+    background: rgba(10,20,10,.97); border-left: 3px solid #0f0;
+    color: #0f0; font-family: monospace;
+  }
+  #settings-panel h2, #hack-panel h2 {
+    font-size:1.3em; margin-bottom: 6px;
+    border-bottom: 2px solid var(--accent); padding-bottom: 8px;
+    color: var(--accent-dark);
+  }
+  #hack-panel h2 { color: #0f0; border-bottom-color: #0f0; text-shadow: 0 0 8px #0f0; }
+  #settings-panel h3, #hack-panel h3 { font-size:1em; margin: 18px 0 8px; color: var(--accent-dark); }
+  #hack-panel h3 { color: #0f0; }
+
+  .panel-header {
+    display: flex; justify-content: space-between; align-items: center;
+    border-bottom: 2px solid var(--accent); padding-bottom: 8px; margin-bottom: 10px;
+    flex-direction: row-reverse;
+  }
+  #hack-panel .panel-header { border-bottom-color: #0f0; }
+  .panel-header h2 { border: none; padding: 0; margin: 0; }
+  .close-x {
+    cursor: pointer; font-size:1.4em; line-height: 1;
+    color: var(--accent-dark); background: rgba(255,107,157,.15);
+    border-radius: 50%; width: 34px; height: 34px;
+    display: flex; align-items: center; justify-content: center;
+    border: 2px solid var(--accent);
+    transition: transform .1s, background .15s;
+  }
+  .close-x:hover { background: rgba(255,107,157,.35); transform: scale(1.08); }
+  .close-x:active { transform: scale(.92); }
+  #hack-panel .close-x { color:#0f0; border-color:#0f0; background: rgba(0,255,0,.1); }
+  #hack-panel .close-x:hover { background: rgba(0,255,0,.25); }
+
+  .theme-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .theme-btn {
+    padding: 12px 10px; border-radius: 10px; cursor: pointer;
+    border: 2px solid transparent; font-size:.85em; font-weight:bold;
+    text-align: center; color:#fff; text-shadow: 1px 1px 2px rgba(0,0,0,.4);
+    transition: transform .1s, border-color .1s; font-family: inherit;
+  }
+  .theme-btn:hover { transform: scale(1.04); }
+  .theme-btn.active { border-color: #fff; box-shadow: 0 0 0 2px var(--accent); }
+  #t-candy    { background: linear-gradient(135deg,#ff9a9e,#fbc2eb); }
+  #t-mint     { background: linear-gradient(135deg,#a8edea,#96e6a1); }
+  #t-galaxy   { background: linear-gradient(135deg,#2b1055,#7597de); }
+  #t-sunset   { background: linear-gradient(135deg,#ff7e5f,#ffd194); }
+  #t-midnight { background: linear-gradient(135deg,#0f0c29,#302b63); }
+
+  .settings-btn {
+    display: block; width: 100%; padding: 12px;
+    border: 2px solid var(--accent); background: transparent;
+    color: var(--accent-dark); border-radius: 10px; cursor: pointer;
+    font-size: .95em; font-weight: bold; margin-top: 8px;
+    transition: background .15s, transform .1s; font-family: inherit;
+  }
+  .settings-btn:hover { background: rgba(255,107,157,.18); }
+  .settings-btn:active { transform: scale(.98); }
+  .settings-btn.danger { border-color: #d33; color: #d33; }
+  .settings-btn.danger:hover { background: rgba(221,51,51,.18); }
+  .settings-btn.primary { background: var(--accent); color:#fff; border-color: var(--accent-dark); }
+  .settings-btn.primary:hover { background: var(--accent-dark); }
+
+  #name-input {
+    width: 100%; padding: 10px; border-radius: 8px;
+    border: 2px solid var(--accent); background: var(--panel);
+    color: var(--text); font-family: inherit; font-size: .95em;
+  }
+  .made-by {
+    margin-top: 28px; padding-top: 16px;
+    border-top: 1px solid rgba(150,150,150,.3);
+    text-align: center; font-size: .85em; color: var(--sub); font-style: italic;
+  }
+  .made-by strong { color: var(--accent-dark); font-style: normal; }
+
+  .hack-btn {
+    display: block; width: 100%; padding: 11px;
+    background: #0a2a0a; color: #0f0;
+    border: 2px solid #0f0; border-radius: 8px;
+    font-family: monospace; font-weight: bold; font-size: .9em;
+    cursor: pointer; margin-top: 8px;
+    transition: background .15s, transform .1s;
+  }
+  .hack-btn:hover { background: #0f3a0f; box-shadow: 0 0 12px rgba(0,255,0,.5); }
+  .hack-btn:active { transform: scale(.98); }
+  .hack-btn.danger { border-color:#f33; color:#f33; background:#2a0a0a; }
+  .hack-btn.danger:hover { background:#3a0f0f; box-shadow:0 0 12px rgba(255,51,51,.5); }
+  .hack-row { display:flex; gap: 8px; margin-top: 8px; }
+  .hack-row input {
+    flex:1; padding: 10px; background:#0a2a0a; color:#0f0;
+    border: 2px solid #0f0; border-radius: 8px;
+    font-family: monospace; font-size:.9em;
+  }
+  .hack-row .hack-btn { margin-top: 0; flex:1; }
+  #hack-status {
+    margin-top: 12px; padding: 10px; border-radius: 8px;
+    background: #0a2a0a; border: 1px dashed #0f0;
+    color: #0f0; font-size: .82em; line-height: 1.5;
+  }
+
+  #golden {
+    position:fixed; width:64px; height:64px; border-radius:50%;
+    background: radial-gradient(circle at 35% 30%, #fff 0%, #ffd700 45%, #ff8c00 100%);
+    box-shadow: 0 0 30px #ffd700, 0 0 60px rgba(255,215,0,.5);
+    cursor:pointer; z-index:9999;
+    display:flex; align-items:center; justify-content:center;
+    font-size:1.8em;
+    animation: goldenPulse 0.5s infinite alternate;
+    border: 2px solid #fff8b0;
+    user-select: none;
+  }
+  @keyframes goldenPulse {
+    from { transform: scale(1); }
+    to   { transform: scale(1.12); }
+  }
+
+  #toast {
+    position: fixed; bottom: 70px; left: 50%; transform: translateX(-50%);
+    background: rgba(0,0,0,.85); color: #fff; padding: 10px 20px;
+    border-radius: 24px; font-size: .9em; z-index: 2000;
+    opacity: 0; pointer-events: none; transition: opacity .3s;
+  }
+  #toast.show { opacity: 1; }
+
+  #news {
+    position:fixed; bottom:0; left:0; right:440px;
+    background:var(--panel-bg); padding:8px 16px; font-size:.85em;
+    font-style:italic; color:var(--sub);
+    border-top:2px solid var(--accent);
+    transition: background .4s, border-color .4s;
+  }
+  .buff-bar {
+    position:fixed; top:64px; left:50%; transform:translateX(-50%);
+    display:flex; gap:8px; z-index:900; flex-wrap:wrap; justify-content:center;
+  }
+  .buff {
+    background:var(--panel); border:2px solid var(--accent); border-radius:8px;
+    padding:5px 10px; font-size:.85em; font-weight:bold; color:var(--accent-dark);
+    box-shadow:0 2px 10px rgba(0,0,0,.2);
+  }
+  @media (max-width: 760px) {
+    body { flex-direction:column; }
+    #right { width:100%; max-height:none; border-left:none; border-top:3px solid var(--accent); }
+    #news { right:0; }
+    #candy-wrap { width: 200px; height: 200px; }
+    #candy { width: 170px; height: 170px; }
+    #settings-panel, #hack-panel { width: 92vw; right: -95vw; }
+    #settings-panel.open, #hack-panel.open { right: 0; }
+  }
+</style>
+</head>
+<body data-theme="candy">
+
+<div id="left">
+  <div id="credit">🍬 Candy Clicker v14 — Made by Ryan</div>
+  <div id="player-name-display">Player</div>
+  <div id="candy-count">0 candies</div>
+  <div id="cps">per second: 0</div>
+  <div id="debug-hint"></div>
+  <div id="click-value">+1 per click</div>
+  <div id="active-bonus"></div>
+  <div id="candy-wrap"><div id="candy"></div></div>
+  <div id="startup-banner">Loading...</div>
+</div>
+
+<div id="right">
+  <h2>🍬 Upgrades</h2>
+  <div id="upgrades"></div>
+  <h2>🏭 Buildings</h2>
+  <div id="buildings"></div>
+  <h2>📊 Stats</h2>
+  <div id="stats"></div>
+</div>
+
+<div id="news"></div>
+<div class="buff-bar" id="buffBar"></div>
+<div id="toast"></div>
+
+<button id="hack-toggle">💀 HACK</button>
+<button id="settings-toggle" title="Settings">⚙️</button>
+
+<div id="settings-panel">
+  <div class="panel-header">
+    <div class="close-x" id="settings-close" title="Close settings">✕</div>
+    <h2>⚙️ Settings</h2>
+  </div>
+
+  <h3>👤 Your Name</h3>
+  <input type="text" id="name-input" placeholder="Enter your name..." maxlength="24" />
+  <button class="settings-btn" id="name-save">Save Name</button>
+
+  <h3>🎨 Theme</h3>
+  <div class="theme-grid">
+    <div class="theme-btn active" id="t-candy"    data-theme="candy">Candy</div>
+    <div class="theme-btn"        id="t-mint"     data-theme="mint">Mint</div>
+    <div class="theme-btn"        id="t-galaxy"   data-theme="galaxy">Galaxy</div>
+    <div class="theme-btn"        id="t-sunset"   data-theme="sunset">Sunset</div>
+    <div class="theme-btn"        id="t-midnight" data-theme="midnight">Midnight</div>
+  </div>
+
+  <h3>💾 Save</h3>
+  <button class="settings-btn" id="save-now">Save Now</button>
+
+  <h3>⚠️ Danger Zone</h3>
+  <button class="settings-btn danger" id="reset-all">Reset Everything</button>
+
+  <h3>🚪 Exit</h3>
+  <button class="settings-btn primary" id="settings-close-bottom">← Close Settings</button>
+
+  <div class="made-by">Made by <strong>Ryan</strong> · Candy Clicker v14</div>
+</div>
+
+<div id="hack-panel">
+  <div class="panel-header">
+    <div class="close-x" id="hack-close" title="Close">✕</div>
+    <h2>💀 HACK MENU</h2>
+  </div>
+  <div style="font-size:.8em;opacity:.8;">Logged in as candyhacker3000</div>
+
+  <h3>💰 Candy</h3>
+  <div class="hack-row">
+    <input type="number" id="hack-amount" value="1000000" min="1" />
+    <button class="hack-btn" id="hack-add-btn">+ Add</button>
+  </div>
+  <button class="hack-btn" id="hack-set-btn">Set Candies to Amount</button>
+  <button class="hack-btn" id="hack-quad-btn">+1 Quadrillion Candies</button>
+
+  <h3>🏭 Buildings</h3>
+  <button class="hack-btn" id="hack-b10">Give 10 of Each Building</button>
+  <button class="hack-btn" id="hack-b100">Give 100 of Each Building</button>
+  <button class="hack-btn" id="hack-b1000">Give 1000 of Each Building</button>
+  <button class="hack-btn danger" id="hack-b0">Remove All Buildings</button>
+
+  <h3>⬆️ Upgrades</h3>
+  <button class="hack-btn" id="hack-up-all">Unlock ALL Upgrades</button>
+  <button class="hack-btn" id="hack-up-reset">Reset All Upgrades</button>
+
+  <h3>⚡ Effects</h3>
+  <button class="hack-btn" id="hack-frenzy">Trigger Golden Frenzy (x7 CPS 30s)</button>
+  <button class="hack-btn" id="hack-cp1k">+1000 Click Power</button>
+  <button class="hack-btn" id="hack-cp1m">+1,000,000 Click Power</button>
+  <button class="hack-btn" id="hack-rain">Spawn 10 Golden Candies</button>
+
+  <h3>🔓 Bypass</h3>
+  <button class="hack-btn" id="hack-bypass-btn">Toggle Free Purchases: OFF</button>
+
+  <h3>⚠️ Danger</h3>
+  <button class="hack-btn danger" id="hack-wipe">Wipe Everything (No Reload)</button>
+
+  <div id="hack-status">Ready.</div>
+</div>
+
+<script>
+/* ============================================================
+   CANDY CLICKER v14
+   - Settings/Hack button hides while its panel is open
+   - Buildings built once, only text updated each frame (buying works)
+   - Golden candy: first at 90s, then every 4min, vanishes in 4s
+   ============================================================ */
+(function () {
+  'use strict';
+
+  function setBanner(text, isError) {
+    var b = document.getElementById('startup-banner');
+    if (b) { b.textContent = text; b.className = isError ? 'error' : ''; }
+  }
+  setBanner('Script running...');
+
+  try {
+    console.log('Candy Clicker v14 starting...');
+
+    var memoryStore = {};
+    var storage = {
+      getItem: function (k) { try { return window.localStorage.getItem(k); } catch (e) { return memoryStore[k] || null; } },
+      setItem: function (k, v) { try { window.localStorage.setItem(k, v); } catch (e) { memoryStore[k] = String(v); } },
+      removeItem: function (k) { try { window.localStorage.removeItem(k); } catch (e) { delete memoryStore[k]; } }
+    };
+    var SAVE_VERSION = 'candyClicker_v14';
+    var LAST_SEEN = 'candyClicker_lastVersion';
+    try {
+      if (storage.getItem(LAST_SEEN) !== SAVE_VERSION) {
+        ['candyClicker_v13','candyClicker_v12','candyClicker_v11','candyClicker_v10','candyClicker_v9',
+         'candyClicker_v8','candyClicker_v7','candyClicker_v6','candyClicker_v5','candyClicker_v4',
+         'candyClicker_v3','candyClickerSave_v4','candyClickerSave_v3','candyClickerSave_v2','candyClickerSave'
+        ].forEach(function (k) { storage.removeItem(k); });
+        storage.setItem(LAST_SEEN, SAVE_VERSION);
+      }
+    } catch (e) {}
+
+    /* -------------------- STATE -------------------- */
+    var state = {
+      candies: 0, totalCandies: 0, clicks: 0, clickPower: 1, cps: 0,
+      goldenClicks: 0, startTime: Date.now(), buffs: [],
+      playerName: 'Player', bypassPurchases: false,
+      building: [
+        { id:'cursor',    name:'Sugar Finger',    icon:'👆', baseCost:15,      baseCps:1,     owned:0, bonusDesc:'+1% click power per 10 owned',
+          bonus:function() { return Math.floor(getBuilding('cursor').owned/10) * 0.01; } },
+        { id:'grandma',   name:'Candy Granny',    icon:'👵', baseCost:100,     baseCps:5,     owned:0, bonusDesc:'Golden candy spawns +5% faster per 10 owned',
+          bonus:function() { return Math.floor(getBuilding('grandma').owned/10) * 0.05; } },
+        { id:'farm',      name:'Sugar Farm',      icon:'🌾', baseCost:1100,    baseCps:20,    owned:0, bonusDesc:'+2% CPS per 10 owned',
+          bonus:function() { return Math.floor(getBuilding('farm').owned/10) * 0.02; } },
+        { id:'mine',      name:'Gumdrop Mine',    icon:'⛏️', baseCost:12000,   baseCps:100,   owned:0, bonusDesc:'+5% click power per 25 owned',
+          bonus:function() { return Math.floor(getBuilding('mine').owned/25) * 0.05; } },
+        { id:'factory',   name:'Candy Factory',   icon:'🏭', baseCost:130000,  baseCps:500,   owned:0, bonusDesc:'+3% CPS per 25 owned',
+          bonus:function() { return Math.floor(getBuilding('factory').owned/25) * 0.03; } },
+        { id:'bank',      name:'Sugar Bank',      icon:'🏦', baseCost:1.4e6,   baseCps:1400,  owned:0, bonusDesc:'+10% offline earnings per 10 owned',
+          bonus:function() { return Math.floor(getBuilding('bank').owned/10) * 0.10; } },
+        { id:'temple',    name:'Temple of Sweets',icon:'🛕', baseCost:2e7,     baseCps:7800,  owned:0, bonusDesc:'+4% CPS per 25 owned',
+          bonus:function() { return Math.floor(getBuilding('temple').owned/25) * 0.04; } },
+        { id:'wizard',    name:'Wizard Tower',    icon:'🧙', baseCost:3.3e8,   baseCps:44000, owned:0, bonusDesc:'+15% click-from-CPS per 10 owned',
+          bonus:function() { return Math.floor(getBuilding('wizard').owned/10) * 0.15; } },
+        { id:'portal',    name:'Candy Portal',    icon:'🌀', baseCost:5.1e9,   baseCps:260000,owned:0, bonusDesc:'+6% CPS per 25 owned',
+          bonus:function() { return Math.floor(getBuilding('portal').owned/25) * 0.06; } },
+        { id:'time',      name:'Time Machine',    icon:'⏳', baseCost:7.5e10,  baseCps:1.6e6, owned:0, bonusDesc:'+25% offline earnings per 10 owned',
+          bonus:function() { return Math.floor(getBuilding('time').owned/10) * 0.25; } },
+        { id:'antimatter',name:'Antimatter Candy',icon:'⚛️', baseCost:1e12,    baseCps:1e7,   owned:0, bonusDesc:'+8% CPS per 25 owned',
+          bonus:function() { return Math.floor(getBuilding('antimatter').owned/25) * 0.08; } },
+        { id:'prism',     name:'Sugar Prism',     icon:'💎', baseCost:1.4e13,  baseCps:6.5e7, owned:0, bonusDesc:'+50% golden candy power per 10 owned',
+          bonus:function() { return Math.floor(getBuilding('prism').owned/10) * 0.50; } },
+      ],
+      upgrades: [
+        { id:'click1', name:'Reinforced Fingers', desc:'+1 per click',   cost:100,    type:'click', value:1,   bought:false, req:function(){ return state.clicks>=10; } },
+        { id:'click2', name:'Steel Fingers',      desc:'+5 per click',   cost:5000,   type:'click', value:5,   bought:false, req:function(){ return state.clicks>=100; } },
+        { id:'click3', name:'Titanium Fingers',   desc:'+25 per click',  cost:250000, type:'click', value:25,  bought:false, req:function(){ return state.clicks>=500; } },
+        { id:'click4', name:'Diamond Fingers',    desc:'+100 per click', cost:5e7,    type:'click', value:100, bought:false, req:function(){ return state.clicks>=2000; } },
+        { id:'click5', name:'Cosmic Fingers',     desc:'+1,000 per click',cost:5e10,  type:'click', value:1000,bought:false, req:function(){ return state.clicks>=10000; } },
+        { id:'cursorU',   name:'Extra Hands',     desc:'Sugar Fingers x2', cost:1000, type:'building', target:'cursor', mult:2, bought:false, req:function(){ return getBuilding('cursor').owned>=1; } },
+        { id:'cursorU2',  name:'Helping Hands',   desc:'Sugar Fingers x3', cost:50000, type:'building', target:'cursor', mult:3, bought:false, req:function(){ return getBuilding('cursor').owned>=10; } },
+        { id:'grandmaU',  name:'Grandma Sweets',  desc:'Candy Grannies x2', cost:5000, type:'building', target:'grandma', mult:2, bought:false, req:function(){ return getBuilding('grandma').owned>=1; } },
+        { id:'grandmaU2', name:'Grandma Army',    desc:'Candy Grannies x3', cost:250000, type:'building', target:'grandma', mult:3, bought:false, req:function(){ return getBuilding('grandma').owned>=10; } },
+        { id:'farmU',     name:'Fertile Soil',    desc:'Sugar Farms x2', cost:55000, type:'building', target:'farm', mult:2, bought:false, req:function(){ return getBuilding('farm').owned>=1; } },
+        { id:'farmU2',    name:'Irrigation',      desc:'Sugar Farms x3', cost:2.75e6, type:'building', target:'farm', mult:3, bought:false, req:function(){ return getBuilding('farm').owned>=10; } },
+        { id:'mineU',     name:'Deep Veins',      desc:'Gumdrop Mines x2', cost:600000, type:'building', target:'mine', mult:2, bought:false, req:function(){ return getBuilding('mine').owned>=1; } },
+        { id:'mineU2',    name:'Deeper Veins',    desc:'Gumdrop Mines x3', cost:3e7, type:'building', target:'mine', mult:3, bought:false, req:function(){ return getBuilding('mine').owned>=10; } },
+        { id:'factoryU',  name:'Automation',      desc:'Candy Factories x2', cost:6.5e6, type:'building', target:'factory', mult:2, bought:false, req:function(){ return getBuilding('factory').owned>=1; } },
+        { id:'factoryU2', name:'Robotic Arms',    desc:'Candy Factories x3', cost:3.25e8, type:'building', target:'factory', mult:3, bought:false, req:function(){ return getBuilding('factory').owned>=10; } },
+        { id:'bankU',     name:'Interest Rates',  desc:'Sugar Banks x2', cost:7e7, type:'building', target:'bank', mult:2, bought:false, req:function(){ return getBuilding('bank').owned>=1; } },
+        { id:'templeU',   name:'Sacred Sugar',    desc:'Temples x2', cost:1e9, type:'building', target:'temple', mult:2, bought:false, req:function(){ return getBuilding('temple').owned>=1; } },
+        { id:'wizardU',   name:'Arcane Recipes',  desc:'Wizard Towers x2', cost:1.65e10, type:'building', target:'wizard', mult:2, bought:false, req:function(){ return getBuilding('wizard').owned>=1; } },
+        { id:'portalU',   name:'Stable Portals',  desc:'Candy Portals x2', cost:2.55e11, type:'building', target:'portal', mult:2, bought:false, req:function(){ return getBuilding('portal').owned>=1; } },
+        { id:'timeU',     name:'Paradox Engine',  desc:'Time Machines x2', cost:3.75e12, type:'building', target:'time', mult:2, bought:false, req:function(){ return getBuilding('time').owned>=1; } },
+        { id:'antiU',     name:'Matter Compressor',desc:'Antimatter Candy x2', cost:5e13, type:'building', target:'antimatter', mult:2, bought:false, req:function(){ return getBuilding('antimatter').owned>=1; } },
+        { id:'prismU',    name:'Refraction',      desc:'Sugar Prisms x2', cost:7e14, type:'building', target:'prism', mult:2, bought:false, req:function(){ return getBuilding('prism').owned>=1; } },
+        { id:'global1', name:'Sweet Aura',        desc:'+1% all CPS', cost:100000, type:'global', value:0.01, bought:false, req:function(){ return state.totalCandies>=5000; } },
+        { id:'global2', name:'Sugar Overload',    desc:'+5% all CPS', cost:1e7, type:'global', value:0.05, bought:false, req:function(){ return state.totalCandies>=1e6; } },
+        { id:'global3', name:'Candy Singularity', desc:'+10% all CPS', cost:1e9, type:'global', value:0.10, bought:false, req:function(){ return state.totalCandies>=1e8; } },
+        { id:'global4', name:'Sugarverse',        desc:'+25% all CPS', cost:1e11, type:'global', value:0.25, bought:false, req:function(){ return state.totalCandies>=1e10; } },
+        { id:'synergy1', name:'Click Sweetspot', desc:'Click gains +5% of your CPS', cost:500000, type:'special', effect:'clickFromCps', value:0.05, bought:false, req:function(){ return state.cps>=100; } },
+        { id:'synergy2', name:'Candy Magnet',   desc:'Golden candy spawns +50% more often', cost:2e6, type:'special', effect:'goldenRate', value:0.5, bought:false, req:function(){ return state.goldenClicks>=1; } },
+        { id:'synergy3', name:'Night Shift',    desc:'Earn 25% of CPS while away', cost:5e7, type:'special', effect:'offline', value:0.25, bought:false, req:function(){ return state.totalCandies>=1e6; } },
+        { id:'synergy4', name:'Sugar Rush',     desc:'Golden candies are 2x as strong', cost:5e8, type:'special', effect:'goldenPower', value:2, bought:false, req:function(){ return state.goldenClicks>=5; } },
+        { id:'synergy5', name:'Eternal Oven',   desc:'All CPS +10% and click +10%', cost:1e10, type:'special', effect:'both', value:0.10, bought:false, req:function(){ return state.totalCandies>=1e9; } },
+      ]
+    };
+
+    /* -------------------- DOM -------------------- */
+    var $ = function (id) { return document.getElementById(id); };
+    var candyEl = $('candy'), countEl = $('candy-count'), cpsEl = $('cps');
+    var debugEl = $('debug-hint');
+    var clickValEl = $('click-value'), bonusEl = $('active-bonus');
+    var buildingsEl = $('buildings'), upgradesEl = $('upgrades'), statsEl = $('stats');
+    var newsEl = $('news'), leftEl = $('left'), buffBar = $('buffBar');
+    var toastEl = $('toast'), nameDisplay = $('player-name-display');
+    var settingsPanel = $('settings-panel'), hackPanel = $('hack-panel');
+    var hackToggle = $('hack-toggle');
+    var settingsToggle = $('settings-toggle');
+
+    /* -------------------- UTIL -------------------- */
+    function fmt(n) {
+      if (n < 1000) return Math.floor(n).toString();
+      var units = ['','K','M','B','T','Qa','Qi','Sx','Sp','Oc','No','Dc'];
+      var u = 0;
+      while (n >= 1000 && u < units.length - 1) { n /= 1000; u++; }
+      return n.toFixed(2).replace(/\.00$/,'') + units[u];
+    }
+    function getBuilding(id) {
+      for (var i = 0; i < state.building.length; i++) if (state.building[i].id === id) return state.building[i];
+      return null;
+    }
+    function buildingCost(b, count) {
+      count = count || 1;
+      var total = 0;
+      for (var i = 0; i < count; i++) total += Math.ceil(b.baseCost * Math.pow(1.15, b.owned + i));
+      return total;
+    }
+    function isUpgradeUnlocked(u) {
+      try { return u.req ? u.req() : true; } catch (e) { return true; }
+    }
+    var toastTimer = null;
+    function toast(msg) {
+      toastEl.textContent = msg;
+      toastEl.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(function () { toastEl.classList.remove('show'); }, 1800);
+    }
+    function setDebug(msg) { debugEl.textContent = msg; }
+
+    /* -------------------- MULTIPLIERS -------------------- */
+    function bonusFrom(sub) {
+      var sum = 0;
+      state.building.forEach(function (b) {
+        if (b.owned > 0 && b.id.indexOf(sub) !== -1) sum += b.bonus();
+      });
+      return sum;
+    }
+    function clickBonusMultiplier() { return 1 + bonusFrom('cursor') + bonusFrom('mine'); }
+    function cpsBonusMultiplier() {
+      return 1 + bonusFrom('farm') + bonusFrom('factory') + bonusFrom('temple')
+               + bonusFrom('portal') + bonusFrom('antimatter');
+    }
+    function clickFromCpsPercent() {
+      var v = bonusFrom('wizard');
+      var u = state.upgrades.find(function(x){ return x.effect === 'clickFromCps'; });
+      if (u && u.bought) v += u.value;
+      return v;
+    }
+    function offlinePercent() {
+      var v = bonusFrom('bank') + bonusFrom('time');
+      var u = state.upgrades.find(function(x){ return x.effect === 'offline'; });
+      if (u && u.bought) v += u.value;
+      return v;
+    }
+    function goldenRateMultiplier() {
+      var v = 1 + bonusFrom('grandma');
+      var u = state.upgrades.find(function(x){ return x.effect === 'goldenRate'; });
+      if (u && u.bought) v += u.value;
+      return v;
+    }
+    function goldenPowerMultiplier() {
+      var v = 1 + bonusFrom('prism');
+      var u = state.upgrades.find(function(x){ return x.effect === 'goldenPower'; });
+      if (u && u.bought) v += u.value - 1;
+      return v;
+    }
+    function buildingMultiplier(bid) {
+      return state.upgrades
+        .filter(function (u) { return u.bought && u.type === 'building' && u.target === bid; })
+        .reduce(function (a, u) { return a * u.mult; }, 1);
+    }
+    function globalMultiplier() {
+      var m = 1;
+      state.upgrades.forEach(function (u) { if (u.bought && u.type === 'global') m += u.value; });
+      var both = state.upgrades.find(function (u) { return u.effect === 'both'; });
+      if (both && both.bought) m += both.value;
+      state.buffs.forEach(function (b) { m *= b.mult; });
+      m *= cpsBonusMultiplier();
+      return m;
+    }
+    function cpsPerBuilding(b) { return b.baseCps * buildingMultiplier(b.id) * globalMultiplier(); }
+    function recalcCps() {
+      var base = 0;
+      state.building.forEach(function (b) { base += b.owned * b.baseCps * buildingMultiplier(b.id); });
+      state.cps = base * globalMultiplier();
+    }
+    function currentClickGain() {
+      var gain = state.clickPower * clickBonusMultiplier() * globalMultiplier();
+      var both = state.upgrades.find(function (u) { return u.effect === 'both'; });
+      if (both && both.bought) gain *= (1 + both.value);
+      gain += state.cps * clickFromCpsPercent();
+      return Math.max(1, gain);
+    }
+
+    /* -------------------- PURCHASE -------------------- */
+    function buyBuilding(b, amount) {
+      amount = amount || 1;
+      var firstCost = buildingCost(b, 1);
+      if (!state.bypassPurchases && state.candies < firstCost) {
+        toast('Not enough candies for ' + b.name + ' (need ' + fmt(firstCost) + ')');
+        setDebug('Need ' + fmt(firstCost) + ' candies for ' + b.name + ' — you have ' + fmt(state.candies));
+        return false;
+      }
+      var n = amount;
+      if (!state.bypassPurchases) {
+        while (n > 1 && state.candies < buildingCost(b, n)) n--;
+        if (state.candies < buildingCost(b, n)) n = 1;
+      }
+      var cost = state.bypassPurchases ? 0 : buildingCost(b, n);
+      if (!state.bypassPurchases && state.candies < cost) return false;
+      state.candies -= cost;
+      b.owned += n;
+      recalcCps();
+      updateAll();
+      console.log('[BUY]', b.name, 'SUCCESS', n, 'for', cost);
+      toast('Bought ' + n + 'x ' + b.name + (state.bypassPurchases ? ' (FREE)' : ' for ' + fmt(cost)));
+      setDebug('✓ Bought ' + n + 'x ' + b.name + ' — now ' + b.owned + ' owned');
+      return true;
+    }
+    function buyUpgrade(u) {
+      if (u.bought) { toast('Already purchased: ' + u.name); return false; }
+      if (!state.bypassPurchases && state.candies < u.cost) {
+        toast('Not enough candies (need ' + fmt(u.cost) + ')');
+        setDebug('Need ' + fmt(u.cost) + ' candies for ' + u.name);
+        return false;
+      }
+      if (!state.bypassPurchases && !isUpgradeUnlocked(u)) { toast('Upgrade locked'); return false; }
+      var cost = state.bypassPurchases ? 0 : u.cost;
+      state.candies -= cost;
+      u.bought = true;
+      if (u.type === 'click' && u.value) state.clickPower += u.value;
+      recalcCps();
+      rebuildUpgrades();
+      updateAll();
+      console.log('[BUY] Upgrade SUCCESS:', u.name);
+      toast('Purchased: ' + u.name + (state.bypassPurchases ? ' (FREE)' : ''));
+      setDebug('✓ Purchased: ' + u.name);
+      return true;
+    }
+
+    /* -------------------- BUILDINGS (built once) -------------------- */
+    var buildingEls = [];
+    function buildBuildingButtons() {
+      buildingsEl.innerHTML = '';
+      buildingEls = [];
+      state.building.forEach(function (b, idx) {
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'item';
+        btn.innerHTML =
+          '<div class="icon">' + b.icon + '</div>' +
+          '<div class="info">' +
+            '<div class="name">' + b.name + ' <span class="owned"></span></div>' +
+            '<div class="cost"></div>' +
+            '<div class="cps-each"></div>' +
+            '<div class="bonus"></div>' +
+          '</div>';
+        btn.onclick = (function (index) {
+          return function (ev) {
+            var amount = (ev.ctrlKey || ev.metaKey) ? 100 : (ev.shiftKey ? 10 : 1);
+            buyBuilding(state.building[index], amount);
+          };
+        })(idx);
+        buildingsEl.appendChild(btn);
+        buildingEls.push({
+          btn: btn,
+          ownedSpan: btn.querySelector('.owned'),
+          costDiv: btn.querySelector('.cost'),
+          cpsDiv: btn.querySelector('.cps-each'),
+          bonusDiv: btn.querySelector('.bonus'),
+          building: b
+        });
+      });
+    }
+    function updateBuildingButtons() {
+      buildingEls.forEach(function (e) {
+        var b = e.building;
+        var cost = buildingCost(b, 1);
+        var cost10 = buildingCost(b, 10);
+        var affordable = state.bypassPurchases || state.candies >= cost;
+        e.btn.classList.toggle('affordable', affordable);
+        e.ownedSpan.textContent = 'x' + b.owned;
+        e.costDiv.textContent = '🍬 ' + (state.bypassPurchases ? 'FREE' : fmt(cost)) +
+          (b.owned > 0 && !state.bypassPurchases ? ' · x10: ' + fmt(cost10) : '');
+        e.cpsDiv.textContent = '+' + fmt(cpsPerBuilding(b)) + '/s each · total ' +
+          fmt(b.owned * cpsPerBuilding(b)) + '/s';
+        var bonusVal = b.bonus ? b.bonus() : 0;
+        e.bonusDiv.textContent = '🎁 ' + ((b.owned > 0 && bonusVal > 0)
+          ? 'Active bonus: +' + (bonusVal*100).toFixed(1) + '%'
+          : b.bonusDesc);
+      });
+    }
+
+    /* -------------------- UPGRADES (rebuilt only on change) -------------------- */
+    function rebuildUpgrades() {
+      upgradesEl.innerHTML = '';
+      var available = [];
+      state.upgrades.forEach(function (u, i) {
+        if (!u.bought && (state.bypassPurchases || isUpgradeUnlocked(u))) available.push({ u: u, i: i });
+      });
+      if (available.length === 0) {
+        upgradesEl.innerHTML = '<div style="font-size:.85em;color:var(--sub);font-style:italic;">No upgrades available yet — keep clicking!</div>';
+        return;
+      }
+      available.forEach(function (item) {
+        var u = item.u, i = item.i;
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'upgrade';
+        btn.innerHTML = '<strong>' + u.name + '</strong><span class="effect">' + u.desc + '</span><br><span class="ucost"></span>';
+        btn.onclick = (function (index) {
+          return function () { buyUpgrade(state.upgrades[index]); };
+        })(i);
+        btn._upgrade = u;
+        upgradesEl.appendChild(btn);
+      });
+      updateUpgradeCosts();
+    }
+    function updateUpgradeCosts() {
+      var btns = upgradesEl.querySelectorAll('.upgrade');
+      for (var i = 0; i < btns.length; i++) {
+        var u = btns[i]._upgrade;
+        if (!u) continue;
+        var canAfford = state.bypassPurchases || state.candies >= u.cost;
+        btns[i].classList.toggle('locked', !canAfford);
+        btns[i].querySelector('.ucost').textContent = '🍬 ' + (state.bypassPurchases ? 'FREE' : fmt(u.cost));
+      }
+    }
+
+    /* -------------------- CLICK CANDY -------------------- */
+    candyEl.addEventListener('click', function (e) {
+      var gain = currentClickGain();
+      state.candies += gain;
+      state.totalCandies += gain;
+      state.clicks++;
+      candyEl.classList.add('bounce');
+      setTimeout(function () { candyEl.classList.remove('bounce'); }, 280);
+      spawnFloat(e.clientX, e.clientY, '+' + fmt(gain));
+      setDebug('+' + fmt(gain) + ' candy · total ' + fmt(state.candies) + ' · clicks ' + state.clicks);
+      updateAll();
+    });
+
+    function spawnFloat(x, y, text) {
+      var f = document.createElement('div');
+      f.className = 'float';
+      f.textContent = text;
+      var rect = leftEl.getBoundingClientRect();
+      f.style.left = (x - rect.left) + 'px';
+      f.style.top  = (y - rect.top) + 'px';
+      leftEl.appendChild(f);
+      setTimeout(function () { f.remove(); }, 1000);
+    }
+
+    /* -------------------- UPDATE ALL -------------------- */
+    function updateAll() {
+      countEl.textContent = fmt(state.candies) + ' candies';
+      cpsEl.textContent = 'per second: ' + fmt(state.cps);
+      nameDisplay.textContent = state.playerName;
+
+      var cg = currentClickGain();
+      clickValEl.textContent = '+' + fmt(cg) + ' per click';
+
+      var lines = [];
+      if (clickFromCpsPercent() > 0) lines.push('Click gains +' + (clickFromCpsPercent()*100).toFixed(0) + '% of CPS');
+      if (offlinePercent() > 0)      lines.push('Offline earnings: ' + (offlinePercent()*100).toFixed(0) + '%');
+      if (state.bypassPurchases)     lines.push('⚠️ FREE PURCHASES ACTIVE');
+      bonusEl.textContent = lines.join(' · ');
+
+      updateBuildingButtons();
+      updateUpgradeCosts();
+
+      var elapsed = Math.floor((Date.now() - state.startTime) / 1000);
+      statsEl.innerHTML =
+        '<div>Player: <strong>' + state.playerName + '</strong></div>' +
+        '<div>Total candies made: <strong>' + fmt(state.totalCandies) + '</strong></div>' +
+        '<div>Hand-made candies: <strong>' + fmt(state.clicks * cg) + '</strong></div>' +
+        '<div>Total clicks: <strong>' + state.clicks + '</strong></div>' +
+        '<div>Click power: <strong>+' + fmt(cg) + '</strong></div>' +
+        '<div>CPS: <strong>' + fmt(state.cps) + '</strong></div>' +
+        '<div>Global multiplier: <strong>x' + globalMultiplier().toFixed(2) + '</strong></div>' +
+        '<div>Golden chance: <strong>x' + goldenRateMultiplier().toFixed(2) + '</strong></div>' +
+        '<div>Golden power: <strong>x' + goldenPowerMultiplier().toFixed(2) + '</strong></div>' +
+        '<div>Offline earnings: <strong>' + (offlinePercent()*100).toFixed(0) + '%</strong></div>' +
+        '<div>Golden candies: <strong>' + state.goldenClicks + '</strong></div>' +
+        '<div>Time played: <strong>' + Math.floor(elapsed/60) + 'm ' + (elapsed%60) + 's</strong></div>';
+
+      buffBar.innerHTML = '';
+      state.buffs.forEach(function (b) {
+        var secs = Math.max(0, Math.ceil((b.endsAt - Date.now()) / 1000));
+        var el = document.createElement('div');
+        el.className = 'buff';
+        el.textContent = b.label + ' x' + b.mult + ' (' + secs + 's)';
+        buffBar.appendChild(el);
+      });
+    }
+
+    /* -------------------- LOOP -------------------- */
+    var last = performance.now();
+    function loop(now) {
+      var dt = (now - last) / 1000;
+      last = now;
+      if (dt > 0.5) dt = 0.5;
+
+      var t = Date.now();
+      var beforeLen = state.buffs.length;
+      state.buffs = state.buffs.filter(function (b) { return b.endsAt > t; });
+      if (state.buffs.length !== beforeLen) recalcCps();
+
+      var gain = state.cps * dt;
+      state.candies += gain;
+      state.totalCandies += gain;
+
+      updateAll();
+      requestAnimationFrame(loop);
+    }
+
+    /* -------------------- GOLDEN -------------------- */
+    var GOLDEN_FIRST_DELAY = 90000;
+    var GOLDEN_INTERVAL    = 240000;
+    var GOLDEN_LIFETIME    = 4000;
+
+    function spawnGolden() {
+      var g = document.createElement('div');
+      g.id = 'golden';
+      g.textContent = '🍭';
+      var maxX = Math.max(50, window.innerWidth - 80);
+      var maxY = Math.max(50, window.innerHeight - 80);
+      g.style.left = Math.floor(Math.random() * maxX) + 'px';
+      g.style.top  = Math.floor(Math.random() * maxY) + 'px';
+      g.addEventListener('click', function () {
+        state.goldenClicks++;
+        var power = goldenPowerMultiplier();
+        var roll = Math.random();
+        if (roll < 0.40) {
+          var bonus = Math.max(13, state.cps * 60) * power;
+          state.candies += bonus; state.totalCandies += bonus;
+          flashNews('🍭 Lucky! +' + fmt(bonus) + ' candies');
+          toast('Lucky! +' + fmt(bonus) + ' candies');
+        } else if (roll < 0.80) {
+          state.buffs.push({ id:'frenzy', mult:7, endsAt: Date.now() + 30000, label:'Frenzy' });
+          recalcCps();
+          flashNews('🔥 Frenzy! x7 CPS for 30 seconds!');
+          toast('🔥 FRENZY! x7 CPS for 30s');
+        } else {
+          var bonus2 = Math.max(50, state.cps * 300) * power;
+          state.candies += bonus2; state.totalCandies += bonus2;
+          flashNews('🌟 Dragonflight! +' + fmt(bonus2) + ' candies');
+          toast('🌟 Dragonflight! +' + fmt(bonus2));
+        }
+        g.remove();
+        updateAll();
+      });
+      document.body.appendChild(g);
+      setTimeout(function () { if (g.parentNode) g.remove(); }, GOLDEN_LIFETIME);
+    }
+    setTimeout(spawnGolden, GOLDEN_FIRST_DELAY);
+    setInterval(spawnGolden, GOLDEN_INTERVAL);
+
+    /* -------------------- NEWS -------------------- */
+    var newsLines = [
+      'Breaking: local child discovers infinite candy glitch, dentists rejoice.',
+      'Sugar prices soar as Candy Clicker economy booms.',
+      'Scientists confirm: candy tastes better when clicked.',
+      'Grandma union demands shorter baking hours.',
+      'Candy Factory reports record profits, workers paid in gumdrops.',
+      'Wizard Tower accidentally turns intern into a lollipop.',
+      'Time Machine operator goes back to prevent sugar crash. Fails.',
+      'Antimatter candy: safe? Or just very, very sweet?',
+      'Golden candy spotted! Click it before it vanishes!',
+      'Local man achieves candy singularity, becomes pure sugar.',
+      'This candy clicker was made by Ryan.',
+      'Rumour: someone named candyhacker3000 is breaking the game...'
+    ];
+    function flashNews(text) { newsEl.textContent = text; }
+    setInterval(function () {
+      newsEl.textContent = newsLines[Math.floor(Math.random() * newsLines.length)];
+    }, 8000);
+
+    /* -------------------- THEME -------------------- */
+    function applyTheme(theme) {
+      document.body.setAttribute('data-theme', theme);
+      var btns = document.querySelectorAll('.theme-btn');
+      for (var i = 0; i < btns.length; i++) {
+        btns[i].classList.toggle('active', btns[i].dataset.theme === theme);
+      }
+      try { storage.setItem('candyClicker_theme', theme); } catch (e) {}
+    }
+    var themeBtns = document.querySelectorAll('.theme-btn');
+    for (var ti = 0; ti < themeBtns.length; ti++) {
+      (function (btn) {
+        btn.onclick = function () {
+          applyTheme(btn.dataset.theme);
+          toast('Theme: ' + btn.dataset.theme);
+        };
+      })(themeBtns[ti]);
+    }
+
+    /* -------------------- PANELS --------------------
+       Settings button hides while settings is open.
+       Hack button hides while hack panel is open.
+       Both reappear when closed. */
+    function openSettings() {
+      settingsPanel.classList.add('open');
+      settingsToggle.classList.add('hidden-while-open');
+      // if hack was open, close it and hide hack button
+      closeHack();
+    }
+    function closeSettings() {
+      settingsPanel.classList.remove('open');
+      settingsToggle.classList.remove('hidden-while-open');
+    }
+    function openHack() {
+      hackPanel.classList.add('open');
+      hackToggle.classList.add('hidden-while-open');
+      closeSettings();
+    }
+    function closeHack() {
+      hackPanel.classList.remove('open');
+      hackToggle.classList.remove('hidden-while-open');
+    }
+
+    settingsToggle.onclick = openSettings;
+    $('settings-close').onclick  = closeSettings;
+    $('settings-close-bottom').onclick = closeSettings;
+    $('hack-close').onclick      = closeHack;
+    hackToggle.onclick           = openHack;
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') { closeSettings(); closeHack(); }
+    });
+
+    /* -------------------- NAME -------------------- */
+    function setName(newName) {
+      newName = (newName || '').trim() || 'Player';
+      state.playerName = newName.slice(0, 24);
+      nameDisplay.textContent = state.playerName;
+      if (state.playerName.toLowerCase() === 'candyhacker3000') {
+        hackToggle.classList.add('show');
+        toast('💀 HACK MENU UNLOCKED 💀');
+      } else {
+        hackToggle.classList.remove('show');
+        closeHack();
+        toast('Name set to: ' + state.playerName);
+      }
+      saveGame();
+    }
+    $('name-save').onclick = function () { setName($('name-input').value); };
+    $('name-input').addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') setName($('name-input').value);
+    });
+
+    /* -------------------- HACK -------------------- */
+    function hackStatus(msg) { $('hack-status').textContent = '> ' + msg; }
+    $('hack-add-btn').onclick    = function () { var n = parseFloat($('hack-amount').value) || 0; state.candies += n; state.totalCandies += n; hackStatus('Added ' + fmt(n)); updateAll(); };
+    $('hack-set-btn').onclick    = function () { var n = parseFloat($('hack-amount').value) || 0; state.candies = n; hackStatus('Set to ' + fmt(n)); updateAll(); };
+    $('hack-quad-btn').onclick   = function () { state.candies += 1e15; state.totalCandies += 1e15; hackStatus('+1Qa'); updateAll(); };
+    $('hack-b10').onclick        = function () { state.building.forEach(function (b) { b.owned = 10; }); recalcCps(); hackStatus('10 of each'); updateAll(); };
+    $('hack-b100').onclick       = function () { state.building.forEach(function (b) { b.owned = 100; }); recalcCps(); hackStatus('100 of each'); updateAll(); };
+    $('hack-b1000').onclick      = function () { state.building.forEach(function (b) { b.owned = 1000; }); recalcCps(); hackStatus('1000 of each'); updateAll(); };
+    $('hack-b0').onclick         = function () { state.building.forEach(function (b) { b.owned = 0; }); recalcCps(); hackStatus('Removed all'); updateAll(); };
+    $('hack-up-all').onclick     = function () { state.upgrades.forEach(function (u) { if (!u.bought) { u.bought = true; if (u.type === 'click' && u.value) state.clickPower += u.value; } }); recalcCps(); rebuildUpgrades(); hackStatus('All upgrades unlocked'); updateAll(); };
+    $('hack-up-reset').onclick   = function () { state.upgrades.forEach(function (u) { u.bought = false; }); state.clickPower = 1; recalcCps(); rebuildUpgrades(); hackStatus('Upgrades reset'); updateAll(); };
+    $('hack-frenzy').onclick     = function () { state.buffs.push({ id:'frenzy', mult:7, endsAt: Date.now() + 30000, label:'Frenzy' }); recalcCps(); hackStatus('Frenzy!'); updateAll(); };
+    $('hack-cp1k').onclick       = function () { state.clickPower += 1000; hackStatus('+1000 click'); updateAll(); };
+    $('hack-cp1m').onclick       = function () { state.clickPower += 1000000; hackStatus('+1M click'); updateAll(); };
+    $('hack-rain').onclick       = function () { for (var i = 0; i < 10; i++) setTimeout(spawnGolden, i * 200); hackStatus('Golden rain!'); };
+    $('hack-bypass-btn').onclick = function () {
+      state.bypassPurchases = !state.bypassPurchases;
+      var b = $('hack-bypass-btn');
+      b.textContent = 'Toggle Free Purchases: ' + (state.bypassPurchases ? 'ON' : 'OFF');
+      b.style.background = state.bypassPurchases ? '#0f3a0f' : '#0a2a0a';
+      hackStatus('Free purchases: ' + (state.bypassPurchases ? 'ON' : 'OFF'));
+      rebuildUpgrades();
+      updateAll();
+    };
+    $('hack-wipe').onclick = function () {
+      if (!confirm('Wipe all progress (no reload)?')) return;
+      state.candies = 0; state.totalCandies = 0; state.clicks = 0;
+      state.clickPower = 1; state.goldenClicks = 0; state.buffs = [];
+      state.building.forEach(function (b) { b.owned = 0; });
+      state.upgrades.forEach(function (u) { u.bought = false; });
+      recalcCps(); rebuildUpgrades(); updateAll(); hackStatus('Wiped.');
+    };
+
+    /* -------------------- SETTINGS ACTIONS -------------------- */
+    $('save-now').onclick = function () { saveGame(); toast('Game saved!'); };
+    $('reset-all').onclick = function () {
+      if (!confirm('Reset EVERYTHING? This wipes all candy, buildings, upgrades, name and settings.')) return;
+      if (!confirm('Are you REALLY sure? Last chance!')) return;
+      try {
+        storage.removeItem(SAVE_VERSION);
+        storage.removeItem('candyClicker_theme');
+        storage.removeItem(LAST_SEEN);
+      } catch (e) {}
+      toast('Resetting...');
+      setTimeout(function () { location.reload(); }, 600);
+    };
+
+    /* -------------------- SAVE / LOAD -------------------- */
+    function saveGame() {
+      try {
+        var data = {
+          candies: state.candies, totalCandies: state.totalCandies,
+          clicks: state.clicks, clickPower: state.clickPower,
+          goldenClicks: state.goldenClicks, startTime: state.startTime,
+          playerName: state.playerName,
+          buildings: state.building.map(function (b) { return b.owned; }),
+          upgrades: state.upgrades.map(function (u) { return u.bought; }),
+          buffs: state.buffs
+        };
+        storage.setItem(SAVE_VERSION, JSON.stringify(data));
+      } catch (e) {}
+    }
+    setInterval(saveGame, 10000);
+    window.addEventListener('beforeunload', saveGame);
+
+    (function loadGame() {
+      try {
+        var theme = storage.getItem('candyClicker_theme');
+        if (theme) applyTheme(theme);
+      } catch (e) {}
+
+      var raw = storage.getItem(SAVE_VERSION);
+      if (!raw) return;
+      try {
+        var d = JSON.parse(raw);
+        state.candies      = d.candies      || 0;
+        state.totalCandies = d.totalCandies || 0;
+        state.clicks       = d.clicks       || 0;
+        state.clickPower   = d.clickPower   || 1;
+        state.goldenClicks = d.goldenClicks || 0;
+        state.startTime    = d.startTime    || Date.now();
+        state.playerName   = d.playerName   || 'Player';
+        $('name-input').value = state.playerName;
+        if (d.buildings) d.buildings.forEach(function (o, i) { if (state.building[i]) state.building[i].owned = o; });
+        if (d.upgrades)  d.upgrades.forEach(function (b, i)  { if (state.upgrades[i])  state.upgrades[i].bought = b; });
+        if (d.buffs)     state.buffs = d.buffs.filter(function (b) { return b.endsAt > Date.now(); });
+        if (state.playerName.toLowerCase() === 'candyhacker3000') hackToggle.classList.add('show');
+      } catch (e) {}
+    })();
+
+    /* -------------------- INIT -------------------- */
+    recalcCps();
+    buildBuildingButtons();
+    rebuildUpgrades();
+    updateAll();
+    requestAnimationFrame(loop);
+    console.log('Candy Clicker v14 ready.');
+    setDebug('Ready — click the candy. You start with 0 candies.');
+    setBanner('✓ Candy Clicker v14 loaded');
+
+  } catch (err) {
+    console.error('Candy Clicker crashed:', err);
+    setBanner('✗ ERROR: ' + err.message, true);
+    var dbg = document.getElementById('debug-hint');
+    if (dbg) dbg.textContent = 'Script error: ' + err.message + ' — see F12 console.';
+  }
+})();
+</script>
+</body>
+</html>
